@@ -1,0 +1,5 @@
+PySide6>=6.5.0
+qt_material>=2.14
+schedule>=1.2.0
+win11toast>=0.4.0
+cryptography>=41.0.0
