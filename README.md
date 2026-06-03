@@ -193,20 +193,6 @@ linkvault/
 
 ---
 
-## 🛠️ 构建与打包
-
-### 使用 PyInstaller 打包
-
-```bash
-pyinstaller app_qt.spec
-```
-
-### 使用 Inno Setup 制作安装包
-
-打开 `installer.iss`，在 Inno Setup Compiler 中编译即可。
-
----
-
 ## 🙏 致谢
 
 - [PySide6](https://wiki.qt.io/Qt_for_Python) — Qt6 的 Python 绑定
