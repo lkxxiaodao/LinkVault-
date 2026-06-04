@@ -23,7 +23,7 @@ class LinkVaultApp:
         self.app.setApplicationName('LinkVault')
         self.app.setOrganizationName('LinkVault')
 
-        self._current_theme = ConfigManager.get('theme', 'light_blue.xml')
+        self._current_theme = ConfigManager.get('theme', 'dark_blue.xml')
         apply_stylesheet(self.app, theme=self._current_theme, invert_secondary=True)
 
         icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'icon.ico')
@@ -49,18 +49,18 @@ class LinkVaultApp:
             self.tray_icon.setIcon(self.app.style().standardIcon(
                 self.app.style().StandardPixmap.SP_ComputerIcon))
 
-        tray_menu = QMenu()
-        show_action = QAction('显示主窗口')
-        show_action.triggered.connect(self.show_window)
-        tray_menu.addAction(show_action)
+        self._tray_menu = QMenu()
+        self._tray_show_action = QAction('显示主窗口')
+        self._tray_show_action.triggered.connect(self.show_window)
+        self._tray_menu.addAction(self._tray_show_action)
 
-        tray_menu.addSeparator()
+        self._tray_menu.addSeparator()
 
-        quit_action = QAction('退出 LinkVault')
-        quit_action.triggered.connect(self.quit_app)
-        tray_menu.addAction(quit_action)
+        self._tray_quit_action = QAction('退出 LinkVault')
+        self._tray_quit_action.triggered.connect(self.quit_app)
+        self._tray_menu.addAction(self._tray_quit_action)
 
-        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.setContextMenu(self._tray_menu)
         self.tray_icon.setToolTip('LinkVault')
         self.tray_icon.activated.connect(self._on_tray_activated)
         self.tray_icon.show()
