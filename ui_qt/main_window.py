@@ -3,9 +3,9 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QMenuBar, QMenu, QMessageBox, QFileDialog, QInputDialog, QLabel,
     QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QFrame, QDialog,
     QLineEdit, QComboBox, QSpinBox, QCheckBox, QRadioButton, QButtonGroup,
-    QSizePolicy, QAbstractItemView
+    QSizePolicy, QAbstractItemView, QApplication
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QEvent, QThread
 from PySide6.QtGui import QAction
 
 from infra.backup import BackupManager
@@ -17,6 +17,47 @@ from ui_qt.folder_tree import FolderTree
 from ui_qt.bookmark_list import BookmarkList
 from ui_qt.search_bar import SearchBar
 from ui_qt.random_walk_bar import RandomWalkBar
+
+
+class _BackupWorker(QThread):
+    """后台线程执行导入导出操作"""
+    finished = Signal(object)
+    error = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._action = None
+        self._args = ()
+        self._kwargs = {}
+
+    def run_import(self, filepath, password):
+        self._action = 'import'
+        self._args = (filepath, password)
+        self.start()
+
+    def run_export_linkvault(self, filepath, password, folder_ids, tag_names):
+        self._action = 'export'
+        self._args = (filepath, password, folder_ids, tag_names)
+        self.start()
+
+    def run_export_html(self, filepath, folder_ids, tag_names):
+        self._action = 'export_html'
+        self._args = (filepath, folder_ids, tag_names)
+        self.start()
+
+    def run(self):
+        try:
+            if self._action == 'import':
+                BackupManager.import_linkvault(*self._args)
+                self.finished.emit('import')
+            elif self._action == 'export':
+                BackupManager.export_linkvault(*self._args)
+                self.finished.emit('export')
+            elif self._action == 'export_html':
+                BackupManager.export_html(*self._args)
+                self.finished.emit('export_html')
+        except Exception as e:
+            self.error.emit(str(e))
 
 
 class MainWindow(QMainWindow):
@@ -568,14 +609,23 @@ class MainWindow(QMainWindow):
         password, ok = QInputDialog.getText(self, '输入密码', '请输入备份密码：', echo=QLineEdit.Password)
         if not ok or not password:
             return
-        if QMessageBox.question(self, '确认导入', '导入将合并备份中的数据，确定继续吗？') == QMessageBox.Yes:
-            try:
-                BackupManager.import_linkvault(filepath, password)
-                self.folder_tree.load_tree()
-                self.bookmark_list.load_all()
-                QMessageBox.information(self, '导入成功', '备份已成功导入')
-            except Exception as e:
-                QMessageBox.critical(self, '导入失败', f'导入过程中发生错误：{e}')
+        if QMessageBox.question(self, '确认导入', '导入将合并备份中的数据，确定继续吗？') != QMessageBox.Yes:
+            return
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self._worker = _BackupWorker(self)
+        self._worker.finished.connect(self._on_import_finished)
+        self._worker.error.connect(self._on_backup_error)
+        self._worker.run_import(filepath, password)
+
+    def _on_import_finished(self, action):
+        QApplication.restoreOverrideCursor()
+        self.folder_tree.load_tree()
+        self.bookmark_list.load_all()
+        QMessageBox.information(self, '导入成功', '备份已成功导入')
+
+    def _on_backup_error(self, error_msg):
+        QApplication.restoreOverrideCursor()
+        QMessageBox.critical(self, '操作失败', f'操作过程中发生错误：{error_msg}')
 
     def _on_export(self):
         from ui_qt.dialogs.settings_dialog import BackupFilterDialog
@@ -591,11 +641,15 @@ class MainWindow(QMainWindow):
         password, ok = QInputDialog.getText(self, '设置密码', '请设置备份密码：', echo=QLineEdit.Password)
         if not ok or not password:
             return
-        try:
-            BackupManager.export_linkvault(filepath, password, folder_ids or None, tag_names or None)
-            QMessageBox.information(self, '导出成功', f'备份已成功导出到：{filepath}')
-        except Exception as e:
-            QMessageBox.critical(self, '导出失败', f'导出过程中发生错误：{e}')
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self._worker = _BackupWorker(self)
+        self._worker.finished.connect(self._on_export_finished)
+        self._worker.error.connect(self._on_backup_error)
+        self._worker.run_export_linkvault(filepath, password, folder_ids or None, tag_names or None)
+
+    def _on_export_finished(self, action):
+        QApplication.restoreOverrideCursor()
+        QMessageBox.information(self, '导出成功', '备份已成功导出')
 
     def _on_export_html(self):
         from ui_qt.dialogs.settings_dialog import BackupFilterDialog
@@ -608,15 +662,26 @@ class MainWindow(QMainWindow):
             self, '导出 HTML 书签', '', 'HTML 书签文件 (*.html)')
         if not filepath:
             return
-        try:
-            BackupManager.export_html(filepath, folder_ids or None, tag_names or None)
-            QMessageBox.information(self, '导出成功', f'书签已成功导出为 HTML：{filepath}')
-        except Exception as e:
-            QMessageBox.critical(self, '导出失败', f'导出过程中发生错误：{e}')
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self._worker = _BackupWorker(self)
+        self._worker.finished.connect(self._on_export_html_finished)
+        self._worker.error.connect(self._on_backup_error)
+        self._worker.run_export_html(filepath, folder_ids or None, tag_names or None)
+
+    def _on_export_html_finished(self, action):
+        QApplication.restoreOverrideCursor()
+        QMessageBox.information(self, '导出成功', '书签已成功导出为 HTML')
 
     def _on_settings(self):
         from ui_qt.dialogs.settings_dialog import SettingsDialog
         SettingsDialog(self, app=self._app).exec()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.WindowStateChange and self.isMinimized() and self._app.tray_icon:
+            self.hide()
+            event.ignore()
+            return
+        super().changeEvent(event)
 
     def closeEvent(self, event):
         if self._app.tray_icon:

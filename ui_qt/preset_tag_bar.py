@@ -79,15 +79,15 @@ class PresetTagBar(QWidget):
     def _button_style(self, checked):
         if checked:
             return (
-                'QPushButton { font-size: 12px; padding: 2px 10px; border: 1px solid #1976D2; '
-                'border-radius: 12px; background-color: #1976D2; color: #ffffff; }'
-                'QPushButton:hover { background-color: #1565C0; }'
+                'QPushButton { font-size: 12px; padding: 2px 10px; border: 1px solid #64b5f6; '
+                'border-radius: 12px; background-color: #64b5f6; color: #1e1e1e; }'
+                'QPushButton:hover { background-color: #42a5f5; }'
             )
         else:
             return (
-                'QPushButton { font-size: 12px; padding: 2px 10px; border: 1px solid #bbb; '
-                'border-radius: 12px; background-color: transparent; color: #555; }'
-                'QPushButton:hover { border-color: #1976D2; color: #1976D2; }'
+                'QPushButton { font-size: 12px; padding: 2px 10px; border: 1px solid #555; '
+                'border-radius: 12px; background-color: transparent; color: #cccccc; }'
+                'QPushButton:hover { border-color: #64b5f6; color: #64b5f6; }'
             )
 
     def _on_toggle(self, name, checked):

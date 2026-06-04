@@ -117,6 +117,8 @@ def _get_local_appdata_roots():
 
 
 class BrowserLauncher:
+    _cached_browsers = None
+
     @staticmethod
     def open_url(url, browser_path=None):
         if browser_path and os.path.exists(browser_path):
@@ -125,15 +127,24 @@ class BrowserLauncher:
             webbrowser.open(url)
 
     @staticmethod
-    def get_installed_browsers():
+    def _scan_all_browsers():
         installed = {}
-
         _scan_app_paths_registry(installed)
         _scan_uninstall_registry(installed)
         _scan_filesystem(installed)
         _load_custom_browsers(installed)
-
         return installed
+
+    @staticmethod
+    def get_installed_browsers():
+        if BrowserLauncher._cached_browsers is None:
+            BrowserLauncher._cached_browsers = BrowserLauncher._scan_all_browsers()
+        return BrowserLauncher._cached_browsers
+
+    @staticmethod
+    def refresh_browser_cache():
+        """强制刷新浏览器缓存（安装新浏览器后调用）"""
+        BrowserLauncher._cached_browsers = BrowserLauncher._scan_all_browsers()
 
     @staticmethod
     def get_custom_browsers():

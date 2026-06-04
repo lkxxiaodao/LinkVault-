@@ -95,3 +95,59 @@ class FolderRepo:
             return result
         finally:
             conn.close()
+
+    @staticmethod
+    def get_bookmark_ids(folder_id):
+        """获取文件夹及其所有子文件夹下的所有书签 ID（不含已删除）"""
+        conn = get_connection()
+        try:
+            folder_ids = FolderRepo.get_children_recursive(folder_id)
+            placeholders = ','.join('?' * len(folder_ids))
+            rows = conn.execute(
+                f'SELECT id FROM bookmarks WHERE folder_id IN ({placeholders}) AND is_deleted = 0',
+                folder_ids
+            ).fetchall()
+            return [r['id'] for r in rows]
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_all_bookmark_folder_ids():
+        """返回 {bookmark_id: folder_id} 映射（仅未删除书签），用于批量池状态检测"""
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                'SELECT id, folder_id FROM bookmarks WHERE is_deleted = 0 AND folder_id IS NOT NULL'
+            ).fetchall()
+            result = {}
+            for r in rows:
+                result[r['id']] = r['folder_id']
+            return result
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_descendant_folder_ids(folder_ids, all_folders=None):
+        """给定一组文件夹 ID，返回它们及其所有后代文件夹 ID 的集合。
+        如果传入 all_folders 列表，可避免额外 DB 查询。"""
+        if not folder_ids:
+            return set()
+        if all_folders is None:
+            all_folders = FolderRepo.get_all()
+        # 构建 parent_id -> [child_id, ...] 映射
+        children_map = {}
+        for f in all_folders:
+            pid = f.get('parent_id')
+            if pid not in children_map:
+                children_map[pid] = []
+            children_map[pid].append(f['id'])
+        # BFS 收集所有后代
+        result = set(folder_ids)
+        queue = list(folder_ids)
+        while queue:
+            fid = queue.pop(0)
+            for child in children_map.get(fid, []):
+                if child not in result:
+                    result.add(child)
+                    queue.append(child)
+        return result

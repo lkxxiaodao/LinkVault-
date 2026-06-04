@@ -9,9 +9,10 @@ def _get_app_path():
     if getattr(sys, 'frozen', False):
         return sys.executable
     else:
-        python_exe = sys.executable
+        python_dir = os.path.dirname(sys.executable)
+        pythonw_exe = os.path.join(python_dir, 'pythonw.exe')
         script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'main.py')
-        return f'"{python_exe}" "{script}"'
+        return f'"{pythonw_exe}" "{script}"'
 
 
 def set_auto_start(enabled):

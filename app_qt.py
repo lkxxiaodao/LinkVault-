@@ -3,7 +3,7 @@ import os
 import tempfile
 from PySide6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
 from PySide6.QtGui import QIcon, QAction
-from PySide6.QtCore import QLockFile
+from PySide6.QtCore import QLockFile, QTimer, QThread, Signal
 from qt_material import apply_stylesheet
 
 from data.database import init_database
@@ -15,6 +15,22 @@ from core.habit_analyzer import HabitAnalyzer
 from core.config_manager import ConfigManager
 from infra.auto_start import is_auto_start_enabled, set_auto_start
 from infra.global_hotkey import GlobalHotkey, parse_hotkey_string, hotkey_to_display
+
+
+class _HabitWorker(QThread):
+    """后台线程执行习惯分析"""
+    finished = Signal(object)
+
+    def run(self):
+        suggestions = HabitAnalyzer.analyze()
+        self.finished.emit(suggestions)
+
+
+class _BrowserCacheWorker(QThread):
+    """后台线程预热浏览器缓存"""
+    def run(self):
+        from infra.browser_launcher import BrowserLauncher
+        BrowserLauncher.get_installed_browsers()
 
 
 class LinkVaultApp:
@@ -145,6 +161,9 @@ class LinkVaultApp:
         ScheduleEngine().start()
         self._check_habits()
         self.main_window.show()
+        # 后台预热浏览器缓存，避免首次打开表单时卡顿
+        self._browser_worker = _BrowserCacheWorker()
+        self._browser_worker.start()
         sys.exit(self.app.exec())
 
     def _sync_auto_start(self):
@@ -158,12 +177,13 @@ class LinkVaultApp:
 
     def _check_habits(self):
         if HabitAnalyzer.is_enabled():
-            suggestions = HabitAnalyzer.analyze()
-            if suggestions:
-                from PySide6.QtCore import QTimer
-                QTimer.singleShot(2000, lambda: self._show_habit_card(suggestions))
+            self._habit_worker = _HabitWorker()
+            self._habit_worker.finished.connect(self._show_habit_card)
+            self._habit_worker.start()
 
     def _show_habit_card(self, suggestions):
+        if not suggestions:
+            return
         from ui_qt.habit_card import HabitCard
         card = HabitCard(self.main_window)
         card.show_suggestions(suggestions)

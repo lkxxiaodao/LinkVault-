@@ -10,6 +10,7 @@ from core.bookmark_manager import BookmarkManager
 from core.random_walker import RandomWalker
 from infra.browser_launcher import BrowserLauncher
 from ui_qt.preset_tag_bar import PresetTagBar
+from data.pool_repo import PoolRepo
 
 
 class BookmarkList(QWidget):
@@ -235,7 +236,7 @@ class BookmarkList(QWidget):
             self.tag_filter_layout.addWidget(btn)
         clear_btn = QPushButton('✕ 清除')
         clear_btn.setMaximumHeight(24)
-        clear_btn.setStyleSheet('font-size: 11px; padding: 2px 8px; color: #888;')
+        clear_btn.setStyleSheet('font-size: 11px; padding: 2px 8px; color: #aaaaaa;')
         clear_btn.clicked.connect(self._clear_filter)
         self.tag_filter_layout.addWidget(clear_btn)
         self.tag_filter_layout.addStretch()
@@ -290,6 +291,13 @@ class BookmarkList(QWidget):
             RandomWalker.add_to_pool(active['id'], bookmark_id)
         self._refresh_pool_column()
 
+    def _get_active_pool_bm_ids(self):
+        """预取活跃池中书签 ID 集合，避免逐行查询"""
+        active = RandomWalker.get_active_pool()
+        if active:
+            return PoolRepo.get_bookmark_ids_set(active['id'])
+        return set()
+
     def _is_in_active_pool(self, bookmark_id):
         active = RandomWalker.get_active_pool()
         if not active:
@@ -298,14 +306,14 @@ class BookmarkList(QWidget):
         return any(b['id'] == bookmark_id for b in bookmarks)
 
     def _refresh_pool_column(self):
+        pool_ids = self._get_active_pool_bm_ids()
         for row in range(self.table.rowCount()):
             item = self.table.item(row, 0)
             if item:
                 bm_id = item.data(Qt.UserRole)
-                in_pool = self._is_in_active_pool(bm_id)
                 pool_item = self.table.item(row, 4)
                 if pool_item:
-                    pool_item.setText('☑' if in_pool else '☐')
+                    pool_item.setText('☑' if bm_id in pool_ids else '☐')
 
     def _on_context_menu(self, pos):
         row = self.table.rowAt(pos.y())
@@ -373,26 +381,26 @@ class BookmarkList(QWidget):
             bookmarks = BookmarkManager.get_all()
         bm_ids = [bm['id'] for bm in bookmarks]
         tags_map = BookmarkManager.get_batch_tags(bm_ids) if bm_ids else {}
-        for bm in bookmarks:
-            row = self.table.rowCount()
-            self.table.insertRow(row)
-            in_pool = self._is_in_active_pool(bm['id'])
+        pool_ids = self._get_active_pool_bm_ids()
+        self.table.setRowCount(len(bookmarks))
+        for idx, bm in enumerate(bookmarks):
+            in_pool = bm['id'] in pool_ids
             title_item = QTableWidgetItem(bm['title'])
             title_item.setData(Qt.UserRole, bm['id'])
             notes = (bm.get('notes') or '').strip()
             title_item.setToolTip(notes if notes else bm['title'])
-            self.table.setItem(row, 0, title_item)
-            self.table.setItem(row, 1, QTableWidgetItem(bm['url']))
-            self.table.setItem(row, 2, QTableWidgetItem(notes))
+            self.table.setItem(idx, 0, title_item)
+            self.table.setItem(idx, 1, QTableWidgetItem(bm['url']))
+            self.table.setItem(idx, 2, QTableWidgetItem(notes))
             bm_tags = tags_map.get(bm['id'], [])
-            self.table.setItem(row, 3, QTableWidgetItem(' '.join(bm_tags) if bm_tags else ''))
-            self.table.setItem(row, 4, QTableWidgetItem('\u2611' if in_pool else '\u2610'))
+            self.table.setItem(idx, 3, QTableWidgetItem(' '.join(bm_tags) if bm_tags else ''))
+            self.table.setItem(idx, 4, QTableWidgetItem('\u2611' if in_pool else '\u2610'))
             click_count = bm.get('click_count') or 0
-            self.table.setItem(row, 5, QTableWidgetItem(str(click_count)))
+            self.table.setItem(idx, 5, QTableWidgetItem(str(click_count)))
             last_opened = bm.get('last_opened_at') or ''
             if last_opened:
                 last_opened = last_opened.replace('T', ' ')[:16]
-            self.table.setItem(row, 6, QTableWidgetItem(last_opened))
+            self.table.setItem(idx, 6, QTableWidgetItem(last_opened))
 
     def set_folder(self, folder_id):
         self._current_folder_id = folder_id
@@ -416,29 +424,28 @@ class BookmarkList(QWidget):
             return
         self._search_mode = True
         self._search_results = results
-        self.table.setRowCount(0)
         bm_ids = [bm['id'] for bm in results]
         tags_map = BookmarkManager.get_batch_tags(bm_ids) if bm_ids else {}
-        for bm in results:
-            row = self.table.rowCount()
-            self.table.insertRow(row)
-            in_pool = self._is_in_active_pool(bm['id'])
+        pool_ids = self._get_active_pool_bm_ids()
+        self.table.setRowCount(len(results))
+        for idx, bm in enumerate(results):
+            in_pool = bm['id'] in pool_ids
             title_item = QTableWidgetItem(bm['title'])
             title_item.setData(Qt.UserRole, bm['id'])
             notes = (bm.get('notes') or '').strip()
             title_item.setToolTip(notes if notes else bm['title'])
-            self.table.setItem(row, 0, title_item)
-            self.table.setItem(row, 1, QTableWidgetItem(bm['url']))
-            self.table.setItem(row, 2, QTableWidgetItem(notes))
+            self.table.setItem(idx, 0, title_item)
+            self.table.setItem(idx, 1, QTableWidgetItem(bm['url']))
+            self.table.setItem(idx, 2, QTableWidgetItem(notes))
             bm_tags = tags_map.get(bm['id'], [])
-            self.table.setItem(row, 3, QTableWidgetItem(' '.join(bm_tags) if bm_tags else ''))
-            self.table.setItem(row, 4, QTableWidgetItem('\u2611' if in_pool else '\u2610'))
+            self.table.setItem(idx, 3, QTableWidgetItem(' '.join(bm_tags) if bm_tags else ''))
+            self.table.setItem(idx, 4, QTableWidgetItem('\u2611' if in_pool else '\u2610'))
             click_count = bm.get('click_count') or 0
-            self.table.setItem(row, 5, QTableWidgetItem(str(click_count)))
+            self.table.setItem(idx, 5, QTableWidgetItem(str(click_count)))
             last_opened = bm.get('last_opened_at') or ''
             if last_opened:
                 last_opened = last_opened.replace('T', ' ')[:16]
-            self.table.setItem(row, 6, QTableWidgetItem(last_opened))
+            self.table.setItem(idx, 6, QTableWidgetItem(last_opened))
 
     def _get_selected_bookmark_id(self):
         row = self.table.currentRow()

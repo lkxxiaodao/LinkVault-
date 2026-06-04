@@ -6,6 +6,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QBrush, QColor
 from core.folder_manager import FolderManager
 from core.random_walker import RandomWalker
+from data.pool_repo import PoolRepo
+from data.folder_repo import FolderRepo
 
 
 class FolderTree(QWidget):
@@ -71,29 +73,25 @@ class FolderTree(QWidget):
         self.tree.header().setSectionResizeMode(1, QHeaderView.Fixed)
         self.tree.header().resizeSection(1, 30)
         self.tree.setIndentation(20)
-        # 设置树控件背景白色，勾选框：未选白色，选中黑色填充
+        # 勾选框样式适配深色主题
         self.tree.setStyleSheet("""
-            QTreeWidget {
-                background-color: #ffffff;
-                color: #000000;
-            }
             QTreeWidget::indicator {
                 width: 16px;
                 height: 16px;
             }
             QTreeWidget::indicator:unchecked {
-                background-color: #ffffff;
-                border: 2px solid #b0b0b0;
+                background-color: #3a3a3a;
+                border: 2px solid #555555;
                 border-radius: 3px;
             }
             QTreeWidget::indicator:checked {
-                background-color: #000000;
-                border: 2px solid #1976D2;
+                background-color: #90caf9;
+                border: 2px solid #64b5f6;
                 border-radius: 3px;
             }
             QTreeWidget::indicator:indeterminate {
-                background-color: #666666;
-                border: 2px solid #1976D2;
+                background-color: #5a5a5a;
+                border: 2px solid #64b5f6;
                 border-radius: 3px;
             }
         """)
@@ -137,7 +135,7 @@ class FolderTree(QWidget):
         font = self._all_item.font(0)
         font.setBold(True)
         self._all_item.setFont(0, font)
-        self._all_item.setForeground(0, QBrush(QColor('#1976D2')))
+        self._all_item.setForeground(0, QBrush(QColor('#64b5f6')))
         roots = FolderManager.get_roots()
         for folder in roots:
             self._insert_folder(self.tree, folder)
@@ -181,22 +179,41 @@ class FolderTree(QWidget):
     def _refresh_pool_checkboxes(self):
         self._updating_checkboxes = True
         active = RandomWalker.get_active_pool()
+        if active:
+            pool_bm_ids = PoolRepo.get_bookmark_ids_set(active['id'])
+            bm_folder_map = FolderRepo.get_all_bookmark_folder_ids()
+            all_folders = FolderRepo.get_all()
+            # 预计算每个文件夹对应的书签 ID 集合（含子文件夹）
+            self._folder_bm_cache = {}
+            for f in all_folders:
+                descendant_ids = FolderRepo.get_descendant_folder_ids([f['id']], all_folders)
+                self._folder_bm_cache[f['id']] = {
+                    bm_id for bm_id, fid in bm_folder_map.items()
+                    if fid in descendant_ids
+                }
+        else:
+            pool_bm_ids = set()
+            self._folder_bm_cache = {}
+
         for i in range(self.tree.topLevelItemCount()):
             item = self.tree.topLevelItem(i)
-            self._refresh_item_checkbox(item, active)
+            self._refresh_item_checkbox(item, pool_bm_ids)
         self._updating_checkboxes = False
 
-    def _refresh_item_checkbox(self, item, active):
+    def _refresh_item_checkbox(self, item, pool_bm_ids):
         folder_id = item.data(0, Qt.UserRole)
-        if folder_id is not None and active:
-            if RandomWalker.is_folder_in_pool(active['id'], folder_id):
+        if folder_id is not None and pool_bm_ids:
+            folder_bms = self._folder_bm_cache.get(folder_id, set())
+            if not folder_bms:
+                item.setCheckState(1, Qt.Unchecked)
+            elif folder_bms.issubset(pool_bm_ids):
                 item.setCheckState(1, Qt.Checked)
-            elif RandomWalker.is_folder_partially_in_pool(active['id'], folder_id):
+            elif folder_bms & pool_bm_ids:
                 item.setCheckState(1, Qt.PartiallyChecked)
             else:
                 item.setCheckState(1, Qt.Unchecked)
         for i in range(item.childCount()):
-            self._refresh_item_checkbox(item.child(i), active)
+            self._refresh_item_checkbox(item.child(i), pool_bm_ids)
 
     def refresh_pool_checkboxes(self):
         """外部调用：刷新所有文件夹的勾选状态"""

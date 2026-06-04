@@ -30,18 +30,18 @@ class QuickCaptureDialog(QDialog):
     def _setup_ui(self):
         self.setStyleSheet("""
             QDialog {
-                background-color: #ffffff;
-                border: 1px solid #c0c0c0;
+                background-color: #2d2d2d;
+                border: 1px solid #3d3d3d;
                 border-radius: 8px;
             }
             QLineEdit {
-                border: 1px solid #d0d0d0;
+                border: 1px solid #3d3d3d;
                 border-radius: 4px;
                 padding: 8px 10px;
                 font-size: 14px;
             }
             QLineEdit:focus {
-                border-color: #1976D2;
+                border-color: #64b5f6;
             }
             QLabel {
                 font-size: 13px;
@@ -58,7 +58,7 @@ class QuickCaptureDialog(QDialog):
         title_bar.addWidget(title_label)
         title_bar.addStretch()
         hint = QLabel('Esc 关闭 | Enter 保存')
-        hint.setStyleSheet('color: #999; font-size: 11px;')
+        hint.setStyleSheet('color: #888888; font-size: 11px;')
         title_bar.addWidget(hint)
         layout.addLayout(title_bar)
 
@@ -99,7 +99,7 @@ class QuickCaptureDialog(QDialog):
 
         btn_row = QHBoxLayout()
         self.status_label = QLabel('')
-        self.status_label.setStyleSheet('color: #43a047; font-size: 11px;')
+        self.status_label.setStyleSheet('color: #81c784; font-size: 11px;')
         btn_row.addWidget(self.status_label)
         btn_row.addStretch()
         btn_save = QPushButton('保存')
@@ -167,7 +167,7 @@ class QuickCaptureDialog(QDialog):
         url = self.url_edit.text().strip()
         if not url:
             self.status_label.setText('请输入网址')
-            self.status_label.setStyleSheet('color: #e53935; font-size: 11px;')
+            self.status_label.setStyleSheet('color: #e57373; font-size: 11px;')
             self.url_edit.setFocus()
             return
         if not url.startswith('http://') and not url.startswith('https://'):
@@ -179,7 +179,7 @@ class QuickCaptureDialog(QDialog):
         existing = BookmarkManager.find_by_url(url)
         if existing:
             self.status_label.setText('该书签已存在')
-            self.status_label.setStyleSheet('color: #e53935; font-size: 11px;')
+            self.status_label.setStyleSheet('color: #e57373; font-size: 11px;')
             return
         bookmark_id = BookmarkManager.add_bookmark(title, url, folder_id)
         tag_names = [t.strip()[:5] for t in self.tags_edit.text().split(',') if t.strip()]
@@ -188,7 +188,7 @@ class QuickCaptureDialog(QDialog):
         if all_tags:
             BookmarkManager.set_tags(bookmark_id, all_tags)
         self.status_label.setText('书签已保存！')
-        self.status_label.setStyleSheet('color: #43a047; font-size: 11px;')
+        self.status_label.setStyleSheet('color: #81c784; font-size: 11px;')
         self.bookmark_saved.emit()
         QTimer.singleShot(1500, self.close)
 

@@ -105,7 +105,7 @@ class BackupFilterDialog(QDialog):
         layout.addWidget(tag_group)
 
         hint = QLabel('提示：文件夹和标签可同时选择，取并集。都不选则备份全部书签。')
-        hint.setStyleSheet('color: #888; font-size: 11px;')
+        hint.setStyleSheet('color: #aaaaaa; font-size: 11px;')
         hint.setWordWrap(True)
         layout.addWidget(hint)
 
@@ -221,7 +221,7 @@ class SettingsDialog(QDialog):
         gen_layout.addWidget(self.auto_start_check)
 
         self._auto_start_hint = QLabel('将注册为 Windows 开机自启项，可在任务管理器中管理')
-        self._auto_start_hint.setStyleSheet('color: #888; font-size: 11px;')
+        self._auto_start_hint.setStyleSheet('color: #aaaaaa; font-size: 11px;')
         self._auto_start_hint.setWordWrap(True)
         gen_layout.addWidget(self._auto_start_hint)
 
@@ -245,7 +245,7 @@ class SettingsDialog(QDialog):
         gen_layout.addLayout(theme_row)
 
         theme_hint = QLabel('切换主题将立即生效')
-        theme_hint.setStyleSheet('color: #888; font-size: 11px;')
+        theme_hint.setStyleSheet('color: #888888; font-size: 11px;')
         gen_layout.addWidget(theme_hint)
 
         gen_layout.addStretch()
@@ -360,7 +360,7 @@ class SettingsDialog(QDialog):
         self.hotkey_edit.set_from_string(hotkey_str)
         capture_str = ConfigManager.get('capture_hotkey', 'Ctrl+Shift+N')
         self.capture_hotkey_edit.set_from_string(capture_str)
-        theme = ConfigManager.get('theme', 'light_blue.xml')
+        theme = ConfigManager.get('theme', 'dark_blue.xml')
         theme_index = 0
         for i in range(self.theme_combo.count()):
             if theme in self.theme_combo.itemText(i):
@@ -487,38 +487,38 @@ class SettingsDialog(QDialog):
         modifiers, vk = self.hotkey_edit.get_modifiers_vk()
         if vk == 0:
             self.hotkey_status.setText('请先设置有效的快捷键组合')
-            self.hotkey_status.setStyleSheet('color: #e53935; font-size: 11px;')
+            self.hotkey_status.setStyleSheet('color: #e57373; font-size: 11px;')
             return
         display = hotkey_to_display(modifiers, vk)
         if self._app:
             ok, result = self._app.update_hotkey(display)
             if ok:
                 self.hotkey_status.setText(f'快捷键已设置为 {result}（即时生效）')
-                self.hotkey_status.setStyleSheet('color: #43a047; font-size: 11px;')
+                self.hotkey_status.setStyleSheet('color: #81c784; font-size: 11px;')
             else:
                 self.hotkey_status.setText(f'{display} 注册失败，可能与其他软件冲突')
-                self.hotkey_status.setStyleSheet('color: #e53935; font-size: 11px;')
+                self.hotkey_status.setStyleSheet('color: #e57373; font-size: 11px;')
         else:
             ConfigManager.set('global_hotkey', display)
             self.hotkey_status.setText(f'快捷键已保存为 {display}（重启后生效）')
-            self.hotkey_status.setStyleSheet('color: #43a047; font-size: 11px;')
+            self.hotkey_status.setStyleSheet('color: #81c784; font-size: 11px;')
 
     def _on_apply_capture_hotkey(self):
         modifiers, vk = self.capture_hotkey_edit.get_modifiers_vk()
         if vk == 0:
             self.capture_hotkey_status.setText('请先设置有效的快捷键组合')
-            self.capture_hotkey_status.setStyleSheet('color: #e53935; font-size: 11px;')
+            self.capture_hotkey_status.setStyleSheet('color: #e57373; font-size: 11px;')
             return
         display = hotkey_to_display(modifiers, vk)
         if self._app:
             ok, result = self._app.update_capture_hotkey(display)
             if ok:
                 self.capture_hotkey_status.setText(f'捕获快捷键已设置为 {result}（即时生效）')
-                self.capture_hotkey_status.setStyleSheet('color: #43a047; font-size: 11px;')
+                self.capture_hotkey_status.setStyleSheet('color: #81c784; font-size: 11px;')
             else:
                 self.capture_hotkey_status.setText(f'{display} 注册失败，可能与其他软件冲突')
-                self.capture_hotkey_status.setStyleSheet('color: #e53935; font-size: 11px;')
+                self.capture_hotkey_status.setStyleSheet('color: #e57373; font-size: 11px;')
         else:
             ConfigManager.set('capture_hotkey', display)
             self.capture_hotkey_status.setText(f'捕获快捷键已保存为 {display}（重启后生效）')
-            self.capture_hotkey_status.setStyleSheet('color: #43a047; font-size: 11px;')
+            self.capture_hotkey_status.setStyleSheet('color: #81c784; font-size: 11px;')

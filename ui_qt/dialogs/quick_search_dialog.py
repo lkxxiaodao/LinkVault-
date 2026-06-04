@@ -35,19 +35,19 @@ class QuickSearchDialog(QDialog):
     def _setup_ui(self):
         self.setStyleSheet("""
             QDialog {
-                background-color: #ffffff;
-                border: 1px solid #c0c0c0;
+                background-color: #2d2d2d;
+                border: 1px solid #3d3d3d;
                 border-radius: 8px;
             }
             QLineEdit {
                 border: none;
-                border-bottom: 1px solid #e0e0e0;
+                border-bottom: 1px solid #3d3d3d;
                 padding: 10px 14px;
                 font-size: 15px;
                 background: transparent;
             }
             QLineEdit:focus {
-                border-bottom: 2px solid #1976D2;
+                border-bottom: 2px solid #64b5f6;
             }
             QListWidget {
                 border: none;
@@ -56,18 +56,18 @@ class QuickSearchDialog(QDialog):
             }
             QListWidget::item {
                 padding: 8px 14px;
-                border-bottom: 1px solid #f0f0f0;
+                border-bottom: 1px solid #2a2a2a;
             }
             QListWidget::item:selected {
-                background-color: #e3f2fd;
-                color: #000000;
+                background-color: #1e3a5f;
+                color: #e0e0e0;
             }
             QListWidget::item:hover {
-                background-color: #f5f5f5;
+                background-color: #2a2a2a;
             }
             QTreeWidget {
                 border: none;
-                border-right: 1px solid #e0e0e0;
+                border-right: 1px solid #3d3d3d;
                 font-size: 13px;
                 outline: none;
             }
@@ -75,11 +75,11 @@ class QuickSearchDialog(QDialog):
                 padding: 4px 8px;
             }
             QTreeWidget::item:selected {
-                background-color: #e3f2fd;
-                color: #000000;
+                background-color: #1e3a5f;
+                color: #e0e0e0;
             }
             QTreeWidget::item:hover {
-                background-color: #f5f5f5;
+                background-color: #2a2a2a;
             }
         """)
 
@@ -89,15 +89,15 @@ class QuickSearchDialog(QDialog):
 
         title_bar = QWidget()
         title_bar.setFixedHeight(36)
-        title_bar.setStyleSheet('background-color: #f8f9fa; border-bottom: 1px solid #e0e0e0; border-radius: 8px 8px 0 0;')
+        title_bar.setStyleSheet('background-color: #252525; border-bottom: 1px solid #3d3d3d; border-radius: 8px 8px 0 0;')
         tb_layout = QHBoxLayout(title_bar)
         tb_layout.setContentsMargins(12, 0, 12, 0)
         title_label = QLabel('LinkVault 快速搜索')
-        title_label.setStyleSheet('font-weight: bold; color: #333;')
+        title_label.setStyleSheet('font-weight: bold; color: #cccccc;')
         tb_layout.addWidget(title_label)
         tb_layout.addStretch()
         hint = QLabel('Esc 关闭 | ↑↓ 导航 | Enter 打开')
-        hint.setStyleSheet('color: #999; font-size: 11px;')
+        hint.setStyleSheet('color: #888888; font-size: 11px;')
         tb_layout.addWidget(hint)
         layout.addWidget(title_bar)
 
@@ -129,7 +129,7 @@ class QuickSearchDialog(QDialog):
 
         self.hint_label = QLabel('输入关键词搜索，或点击左侧文件夹浏览...')
         self.hint_label.setAlignment(Qt.AlignCenter)
-        self.hint_label.setStyleSheet('color: #999; padding: 20px;')
+        self.hint_label.setStyleSheet('color: #888888; padding: 20px;')
         right_layout.addWidget(self.hint_label)
 
         splitter.addWidget(right_panel)
@@ -150,7 +150,7 @@ class QuickSearchDialog(QDialog):
         font = all_item.font(0)
         font.setBold(True)
         all_item.setFont(0, font)
-        all_item.setForeground(0, QBrush(QColor('#1976D2')))
+        all_item.setForeground(0, QBrush(QColor('#64b5f6')))
         roots = FolderManager.get_roots()
         for folder in roots:
             self._insert_folder(self.folder_tree, folder)

@@ -101,6 +101,19 @@ class PoolRepo:
             conn.close()
 
     @staticmethod
+    def get_bookmark_ids_set(pool_id):
+        """返回池中书签 ID 的集合（仅 ID，避免加载完整记录）"""
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                'SELECT bookmark_id FROM pool_bookmarks WHERE pool_id = ?',
+                (pool_id,)
+            ).fetchall()
+            return {r['bookmark_id'] for r in rows}
+        finally:
+            conn.close()
+
+    @staticmethod
     def remove_bookmark(pool_id, bookmark_id):
         conn = get_connection()
         try:
