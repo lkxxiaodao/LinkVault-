@@ -149,9 +149,12 @@ class LinkVaultApp:
 
     def _sync_auto_start(self):
         config_enabled = ConfigManager.get_bool('auto_start', False)
-        actual_enabled = is_auto_start_enabled()
-        if config_enabled != actual_enabled:
-            set_auto_start(config_enabled)
+        if config_enabled:
+            set_auto_start(True)
+        else:
+            actual_enabled = is_auto_start_enabled()
+            if actual_enabled:
+                set_auto_start(False)
 
     def _check_habits(self):
         if HabitAnalyzer.is_enabled():

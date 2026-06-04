@@ -71,10 +71,11 @@ class MainWindow(QMainWindow):
         left_layout.setContentsMargins(0, 0, 4, 0)
         self.folder_tree = FolderTree()
         self.folder_tree.folder_selected.connect(self._on_folder_selected)
+        self.folder_tree.pool_changed.connect(self._on_pool_changed)
         left_layout.addWidget(self.folder_tree)
         splitter.addWidget(left)
         splitter.setStretchFactor(0, 0)
-        left.setMaximumWidth(280)
+        left.setMaximumWidth(310)
 
         right = QWidget()
         right_layout = QVBoxLayout(right)
@@ -444,6 +445,8 @@ class MainWindow(QMainWindow):
             self.random_walk_bar.refresh()
         if hasattr(self, 'bookmark_list'):
             self.bookmark_list.refresh_pools()
+        if hasattr(self, 'folder_tree'):
+            self.folder_tree.refresh_pool_checkboxes()
 
     def _setup_trash_tab(self):
         tab = QWidget()

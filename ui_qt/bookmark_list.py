@@ -9,6 +9,7 @@ from PySide6.QtGui import QAction, QClipboard
 from core.bookmark_manager import BookmarkManager
 from core.random_walker import RandomWalker
 from infra.browser_launcher import BrowserLauncher
+from ui_qt.preset_tag_bar import PresetTagBar
 
 
 class BookmarkList(QWidget):
@@ -155,9 +156,12 @@ class BookmarkList(QWidget):
         row_tags = QHBoxLayout()
         row_tags.addWidget(QLabel('标签：'))
         self.tags_edit = QLineEdit()
-        self.tags_edit.setPlaceholderText('每个标签最多5字，逗号分隔，如: 工作, 灵感, 待读')
+        self.tags_edit.setPlaceholderText('手动输入，逗号分隔，如: 工作, 灵感, 待读')
         row_tags.addWidget(self.tags_edit)
         form_layout.addLayout(row_tags)
+
+        self.preset_tag_bar = PresetTagBar()
+        form_layout.addWidget(self.preset_tag_bar)
 
         btn_row = QHBoxLayout()
         btn_save = QPushButton('保存')
@@ -201,6 +205,7 @@ class BookmarkList(QWidget):
         self.url_edit.clear()
         self.notes_edit.clear()
         self.tags_edit.clear()
+        self.preset_tag_bar.clear_selection()
 
     def _setup_tag_filter_bar(self):
         from PySide6.QtWidgets import QScrollArea
@@ -250,7 +255,9 @@ class BookmarkList(QWidget):
         else:
             bookmark_id = BookmarkManager.add_bookmark(title, url, self._current_folder_id, browser_path, notes)
         tag_names = [t.strip()[:5] for t in self.tags_edit.text().split(',') if t.strip()]
-        BookmarkManager.set_tags(bookmark_id, tag_names)
+        preset_tags = self.preset_tag_bar.get_selected_tags()
+        all_tags = list(dict.fromkeys(preset_tags + tag_names))
+        BookmarkManager.set_tags(bookmark_id, all_tags)
         self._hide_form()
         self._refresh()
         if self._on_refresh_pools:
@@ -464,7 +471,9 @@ class BookmarkList(QWidget):
         self.url_edit.setText(bm.get('url', ''))
         self.notes_edit.setText(bm.get('notes', ''))
         tags = BookmarkManager.get_tags(bookmark_id)
-        self.tags_edit.setText(', '.join(t['name'] for t in tags) if tags else '')
+        tag_names = [t['name'] for t in tags] if tags else []
+        self.tags_edit.setText(', '.join(tag_names))
+        self.preset_tag_bar.set_selected_tags(tag_names)
         self._refresh_browser_list()
         browser_path = bm.get('default_browser', '')
         if browser_path:

@@ -1,19 +1,23 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem,
-    QPushButton, QLineEdit, QMessageBox, QFrame, QAbstractItemView
+    QPushButton, QLineEdit, QMessageBox, QFrame, QAbstractItemView, QHeaderView
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont, QBrush, QColor
+from PySide6.QtGui import QBrush, QColor
 from core.folder_manager import FolderManager
+from core.random_walker import RandomWalker
 
 
 class FolderTree(QWidget):
     folder_selected = Signal(object)
+    pool_changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._selected_folder_id = None
         self._all_item = None
+        self._editing_folder_id = None
+        self._updating_checkboxes = False
         self._setup_ui()
         self.load_tree()
 
@@ -28,9 +32,12 @@ class FolderTree(QWidget):
         tb_layout.setSpacing(4)
         self.add_btn = QPushButton('+ 文件夹')
         self.add_btn.clicked.connect(self._toggle_form)
+        rename_btn = QPushButton('重命名')
+        rename_btn.clicked.connect(self._on_rename_folder)
         del_btn = QPushButton('- 删除')
         del_btn.clicked.connect(self._on_delete_folder)
         tb_layout.addWidget(self.add_btn)
+        tb_layout.addWidget(rename_btn)
         tb_layout.addWidget(del_btn)
         tb_layout.addStretch()
         layout.addWidget(toolbar)
@@ -54,16 +61,49 @@ class FolderTree(QWidget):
         layout.addWidget(self.form_frame)
 
         self.tree = QTreeWidget()
+        self.tree.setColumnCount(2)
         self.tree.setHeaderHidden(True)
         self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tree.itemSelectionChanged.connect(self._on_select)
         self.tree.clicked.connect(self._on_clicked)
+        self.tree.itemChanged.connect(self._on_item_changed)
+        self.tree.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.tree.header().setSectionResizeMode(1, QHeaderView.Fixed)
+        self.tree.header().resizeSection(1, 30)
+        self.tree.setIndentation(20)
+        # 设置树控件背景白色，勾选框：未选白色，选中黑色填充
+        self.tree.setStyleSheet("""
+            QTreeWidget {
+                background-color: #ffffff;
+                color: #000000;
+            }
+            QTreeWidget::indicator {
+                width: 16px;
+                height: 16px;
+            }
+            QTreeWidget::indicator:unchecked {
+                background-color: #ffffff;
+                border: 2px solid #b0b0b0;
+                border-radius: 3px;
+            }
+            QTreeWidget::indicator:checked {
+                background-color: #000000;
+                border: 2px solid #1976D2;
+                border-radius: 3px;
+            }
+            QTreeWidget::indicator:indeterminate {
+                background-color: #666666;
+                border: 2px solid #1976D2;
+                border-radius: 3px;
+            }
+        """)
         layout.addWidget(self.tree)
 
     def _toggle_form(self):
         if self.form_frame.isVisible():
             self._hide_form()
             return
+        self._editing_folder_id = None
         self.name_edit.clear()
         self.form_frame.show()
         self.name_edit.setFocus()
@@ -71,17 +111,21 @@ class FolderTree(QWidget):
     def _hide_form(self):
         self.form_frame.hide()
         self.name_edit.clear()
+        self._editing_folder_id = None
 
     def _on_form_save(self):
         name = self.name_edit.text().strip()
         if not name:
             QMessageBox.warning(self, '输入不完整', '文件夹名称不能为空')
             return
-        selected = self.tree.selectedItems()
-        parent_id = None
-        if selected:
-            parent_id = selected[0].data(0, Qt.UserRole)
-        FolderManager.create_folder(name, parent_id)
+        if self._editing_folder_id is not None:
+            FolderManager.update_folder(self._editing_folder_id, name=name)
+        else:
+            selected = self.tree.selectedItems()
+            parent_id = None
+            if selected:
+                parent_id = selected[0].data(0, Qt.UserRole)
+            FolderManager.create_folder(name, parent_id)
         self._hide_form()
         self.load_tree()
 
@@ -99,15 +143,64 @@ class FolderTree(QWidget):
             self._insert_folder(self.tree, folder)
         self.tree.expandAll()
         self.tree.setCurrentItem(self._all_item)
+        self._refresh_pool_checkboxes()
 
     def _insert_folder(self, parent, folder):
         item = QTreeWidgetItem(parent)
         item.setText(0, folder['name'])
         item.setData(0, Qt.UserRole, folder['id'])
+        item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+        item.setCheckState(1, Qt.Unchecked)
         children = FolderManager.get_children(folder['id'])
         for child in children:
             self._insert_folder(item, child)
         return item
+
+    def _on_item_changed(self, item, column):
+        if self._updating_checkboxes:
+            return
+        if column != 1:
+            return
+        folder_id = item.data(0, Qt.UserRole)
+        if folder_id is None:
+            return
+        active = RandomWalker.get_active_pool()
+        if not active:
+            QMessageBox.information(self.window(), '提示', '请先在底部随机漫步栏选择或创建一个池')
+            self._updating_checkboxes = True
+            item.setCheckState(1, Qt.Unchecked)
+            self._updating_checkboxes = False
+            return
+        state = item.checkState(1)
+        if state == Qt.Checked:
+            RandomWalker.add_folder_to_pool(active['id'], folder_id)
+        else:
+            RandomWalker.remove_folder_from_pool(active['id'], folder_id)
+        self.pool_changed.emit()
+
+    def _refresh_pool_checkboxes(self):
+        self._updating_checkboxes = True
+        active = RandomWalker.get_active_pool()
+        for i in range(self.tree.topLevelItemCount()):
+            item = self.tree.topLevelItem(i)
+            self._refresh_item_checkbox(item, active)
+        self._updating_checkboxes = False
+
+    def _refresh_item_checkbox(self, item, active):
+        folder_id = item.data(0, Qt.UserRole)
+        if folder_id is not None and active:
+            if RandomWalker.is_folder_in_pool(active['id'], folder_id):
+                item.setCheckState(1, Qt.Checked)
+            elif RandomWalker.is_folder_partially_in_pool(active['id'], folder_id):
+                item.setCheckState(1, Qt.PartiallyChecked)
+            else:
+                item.setCheckState(1, Qt.Unchecked)
+        for i in range(item.childCount()):
+            self._refresh_item_checkbox(item.child(i), active)
+
+    def refresh_pool_checkboxes(self):
+        """外部调用：刷新所有文件夹的勾选状态"""
+        self._refresh_pool_checkboxes()
 
     def _on_select(self):
         selected = self.tree.selectedItems()
@@ -116,11 +209,27 @@ class FolderTree(QWidget):
             self.folder_selected.emit(self._selected_folder_id)
 
     def _on_clicked(self, index):
-        item = self.tree.itemAt(index)
+        item = self.tree.itemFromIndex(index)
         if item is None:
             self.tree.clearSelection()
             self._selected_folder_id = None
             self.folder_selected.emit(None)
+
+    def _on_rename_folder(self):
+        selected = self.tree.selectedItems()
+        if not selected:
+            QMessageBox.information(self, '提示', '请先选择要重命名的文件夹')
+            return
+        item = selected[0]
+        folder_id = item.data(0, Qt.UserRole)
+        if folder_id is None:
+            QMessageBox.information(self, '提示', '不能重命名"全部书签"')
+            return
+        self._editing_folder_id = folder_id
+        self.name_edit.setText(item.text(0))
+        self.form_frame.show()
+        self.name_edit.setFocus()
+        self.name_edit.selectAll()
 
     def _on_delete_folder(self):
         selected = self.tree.selectedItems()

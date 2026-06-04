@@ -8,6 +8,7 @@ from core.bookmark_manager import BookmarkManager
 from core.folder_manager import FolderManager
 from core.url_extractor import UrlExtractor
 from infra.browser_launcher import BrowserLauncher
+from ui_qt.preset_tag_bar import PresetTagBar
 
 
 class QuickCaptureDialog(QDialog):
@@ -89,9 +90,12 @@ class QuickCaptureDialog(QDialog):
         row4 = QHBoxLayout()
         row4.addWidget(QLabel('标签：'))
         self.tags_edit = QLineEdit()
-        self.tags_edit.setPlaceholderText('逗号分隔，如: 工作, 待读')
+        self.tags_edit.setPlaceholderText('手动输入，逗号分隔，如: 工作, 待读')
         row4.addWidget(self.tags_edit)
         layout.addLayout(row4)
+
+        self.preset_tag_bar = PresetTagBar()
+        layout.addWidget(self.preset_tag_bar)
 
         btn_row = QHBoxLayout()
         self.status_label = QLabel('')
@@ -141,6 +145,7 @@ class QuickCaptureDialog(QDialog):
         self.url_edit.clear()
         self.title_edit.clear()
         self.tags_edit.clear()
+        self.preset_tag_bar.clear_selection()
         self.status_label.clear()
         self.folder_combo.setCurrentIndex(0)
 
@@ -178,8 +183,10 @@ class QuickCaptureDialog(QDialog):
             return
         bookmark_id = BookmarkManager.add_bookmark(title, url, folder_id)
         tag_names = [t.strip()[:5] for t in self.tags_edit.text().split(',') if t.strip()]
-        if tag_names:
-            BookmarkManager.set_tags(bookmark_id, tag_names)
+        preset_tags = self.preset_tag_bar.get_selected_tags()
+        all_tags = list(dict.fromkeys(preset_tags + tag_names))
+        if all_tags:
+            BookmarkManager.set_tags(bookmark_id, all_tags)
         self.status_label.setText('书签已保存！')
         self.status_label.setStyleSheet('color: #43a047; font-size: 11px;')
         self.bookmark_saved.emit()
