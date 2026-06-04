@@ -17,10 +17,6 @@ class BookmarkManager:
         BookmarkRepo.delete(bookmark_id)
 
     @staticmethod
-    def move_to_folder(bookmark_id, folder_id):
-        BookmarkRepo.move_to_folder(bookmark_id, folder_id)
-
-    @staticmethod
     def search(query):
         return BookmarkRepo.search(query)
 

@@ -142,11 +142,6 @@ class BrowserLauncher:
         return BrowserLauncher._cached_browsers
 
     @staticmethod
-    def refresh_browser_cache():
-        """强制刷新浏览器缓存（安装新浏览器后调用）"""
-        BrowserLauncher._cached_browsers = BrowserLauncher._scan_all_browsers()
-
-    @staticmethod
     def get_custom_browsers():
         from core.config_manager import ConfigManager
         raw = ConfigManager.get('custom_browsers', '[]')

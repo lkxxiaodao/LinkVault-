@@ -5,10 +5,11 @@ from PySide6.QtWidgets import (
     QLineEdit, QComboBox, QSpinBox, QCheckBox, QRadioButton, QButtonGroup,
     QSizePolicy, QAbstractItemView, QApplication
 )
-from PySide6.QtCore import Qt, Signal, QEvent, QThread
+from PySide6.QtCore import Qt, Signal, QThread
 from PySide6.QtGui import QAction
 
 from infra.backup import BackupManager
+from infra.bookmark_importer import import_bookmarks_from_html
 from core.schedule_engine import ScheduleEngine
 from core.random_walker import RandomWalker
 from data.schedule_repo import ScheduleRepo
@@ -45,6 +46,11 @@ class _BackupWorker(QThread):
         self._args = (filepath, folder_ids, tag_names)
         self.start()
 
+    def run_import_browser_bookmarks(self, filepath):
+        self._action = 'import_browser_bookmarks'
+        self._args = (filepath,)
+        self.start()
+
     def run(self):
         try:
             if self._action == 'import':
@@ -56,6 +62,9 @@ class _BackupWorker(QThread):
             elif self._action == 'export_html':
                 BackupManager.export_html(*self._args)
                 self.finished.emit('export_html')
+            elif self._action == 'import_browser_bookmarks':
+                imported, skipped = import_bookmarks_from_html(*self._args)
+                self.finished.emit(('import_browser_bookmarks', imported, skipped))
         except Exception as e:
             self.error.emit(str(e))
 
@@ -87,6 +96,7 @@ class MainWindow(QMainWindow):
 
         file_menu = menubar.addMenu('文件')
         file_menu.addAction('导入备份...', self._on_import)
+        file_menu.addAction('导入浏览器收藏夹...', self._on_import_browser_bookmarks)
         file_menu.addAction('导出备份...', self._on_export)
         file_menu.addAction('导出 HTML...', self._on_export_html)
         file_menu.addSeparator()
@@ -623,6 +633,27 @@ class MainWindow(QMainWindow):
         self.bookmark_list.load_all()
         QMessageBox.information(self, '导入成功', '备份已成功导入')
 
+    def _on_import_browser_bookmarks(self):
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, '导入浏览器收藏夹', '', 'HTML 文件 (*.html *.htm)')
+        if not filepath:
+            return
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self._worker = _BackupWorker(self)
+        self._worker.finished.connect(self._on_import_browser_bookmarks_finished)
+        self._worker.error.connect(self._on_backup_error)
+        self._worker.run_import_browser_bookmarks(filepath)
+
+    def _on_import_browser_bookmarks_finished(self, result):
+        QApplication.restoreOverrideCursor()
+        _, imported, skipped = result
+        self.folder_tree.load_tree()
+        self.bookmark_list.load_all()
+        msg = f'导入完成！\n成功导入 {imported} 个书签'
+        if skipped > 0:
+            msg += f'\n跳过 {skipped} 个已存在的书签'
+        QMessageBox.information(self, '导入成功', msg)
+
     def _on_backup_error(self, error_msg):
         QApplication.restoreOverrideCursor()
         QMessageBox.critical(self, '操作失败', f'操作过程中发生错误：{error_msg}')
@@ -675,13 +706,6 @@ class MainWindow(QMainWindow):
     def _on_settings(self):
         from ui_qt.dialogs.settings_dialog import SettingsDialog
         SettingsDialog(self, app=self._app).exec()
-
-    def changeEvent(self, event):
-        if event.type() == QEvent.WindowStateChange and self.isMinimized() and self._app.tray_icon:
-            self.hide()
-            event.ignore()
-            return
-        super().changeEvent(event)
 
     def closeEvent(self, event):
         if self._app.tray_icon:

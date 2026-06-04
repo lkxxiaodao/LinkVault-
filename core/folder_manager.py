@@ -29,15 +29,3 @@ class FolderManager:
     @staticmethod
     def delete_folder(folder_id):
         FolderRepo.delete(folder_id)
-
-    @staticmethod
-    def get_folder_tree():
-        def build_tree(parent_id=None, depth=0):
-            children = FolderRepo.get_by_parent(parent_id)
-            tree = []
-            for child in children:
-                node = {**child, 'depth': depth, 'children': []}
-                node['children'] = build_tree(child['id'], depth + 1)
-                tree.append(node)
-            return tree
-        return build_tree()

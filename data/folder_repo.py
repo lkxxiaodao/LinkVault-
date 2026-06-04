@@ -53,6 +53,22 @@ class FolderRepo:
             conn.close()
 
     @staticmethod
+    def get_by_name(name, parent_id=None):
+        conn = get_connection()
+        try:
+            if parent_id is None:
+                row = conn.execute(
+                    'SELECT * FROM folders WHERE name = ? AND parent_id IS NULL', (name,)
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    'SELECT * FROM folders WHERE name = ? AND parent_id = ?', (name, parent_id)
+                ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
+
+    @staticmethod
     def update(folder_id, **kwargs):
         allowed = {'name', 'parent_id', 'sort_order'}
         fields = {k: v for k, v in kwargs.items() if k in allowed}

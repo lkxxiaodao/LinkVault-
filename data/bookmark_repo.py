@@ -208,8 +208,22 @@ class BookmarkRepo:
             conn.close()
 
     @staticmethod
-    def move_to_folder(bookmark_id, folder_id):
-        BookmarkRepo.update(bookmark_id, folder_id=folder_id)
+    def empty_trash():
+        conn = get_connection()
+        try:
+            conn.execute(
+                'DELETE FROM bookmark_tags WHERE bookmark_id IN (SELECT id FROM bookmarks WHERE is_deleted = 1)'
+            )
+            conn.execute(
+                'DELETE FROM open_history WHERE bookmark_id IN (SELECT id FROM bookmarks WHERE is_deleted = 1)'
+            )
+            conn.execute(
+                'DELETE FROM pool_bookmarks WHERE bookmark_id IN (SELECT id FROM bookmarks WHERE is_deleted = 1)'
+            )
+            conn.execute('DELETE FROM bookmarks WHERE is_deleted = 1')
+            conn.commit()
+        finally:
+            conn.close()
 
     @staticmethod
     def get_tags(bookmark_id):
