@@ -159,6 +159,7 @@ imports:
  &#8226;   <a href="#genericpath">genericpath</a>
  &#8226;   <a href="#heapq">heapq</a>
  &#8226;   <a href="#infra.auto_start">infra.auto_start</a>
+ &#8226;   <a href="#infra.browser_launcher">infra.browser_launcher</a>
  &#8226;   <a href="#infra.global_hotkey">infra.global_hotkey</a>
  &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#keyword">keyword</a>
@@ -3651,7 +3652,6 @@ imported by:
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#core">core</a>
- &#8226;   <a href="#data.bookmark_repo">data.bookmark_repo</a>
  &#8226;   <a href="#re">re</a>
 
   </div>
@@ -4611,8 +4611,8 @@ imported by:
  &#8226;   <a href="#core.habit_analyzer">core.habit_analyzer</a>
  &#8226;   <a href="#core.random_walker">core.random_walker</a>
  &#8226;   <a href="#core.schedule_engine">core.schedule_engine</a>
- &#8226;   <a href="#core.url_extractor">core.url_extractor</a>
  &#8226;   <a href="#infra.backup">infra.backup</a>
+ &#8226;   <a href="#infra.bookmark_importer">infra.bookmark_importer</a>
  &#8226;   <a href="#ui_qt.main_window">ui_qt.main_window</a>
 
   </div>
@@ -4641,6 +4641,7 @@ imported by:
  &#8226;   <a href="#data.pool_repo">data.pool_repo</a>
  &#8226;   <a href="#data.schedule_repo">data.schedule_repo</a>
  &#8226;   <a href="#infra.backup">infra.backup</a>
+ &#8226;   <a href="#infra.bookmark_importer">infra.bookmark_importer</a>
 
   </div>
 
@@ -4660,6 +4661,8 @@ imported by:
     <a href="#core.folder_manager">core.folder_manager</a>
  &#8226;   <a href="#core.random_walker">core.random_walker</a>
  &#8226;   <a href="#infra.backup">infra.backup</a>
+ &#8226;   <a href="#infra.bookmark_importer">infra.bookmark_importer</a>
+ &#8226;   <a href="#ui_qt.folder_tree">ui_qt.folder_tree</a>
  &#8226;   <a href="#ui_qt.main_window">ui_qt.main_window</a>
 
   </div>
@@ -4699,6 +4702,8 @@ imports:
 imported by:
     <a href="#core.random_walker">core.random_walker</a>
  &#8226;   <a href="#infra.backup">infra.backup</a>
+ &#8226;   <a href="#ui_qt.bookmark_list">ui_qt.bookmark_list</a>
+ &#8226;   <a href="#ui_qt.folder_tree">ui_qt.folder_tree</a>
 
   </div>
 
@@ -8274,6 +8279,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#html.entities">html.entities</a>
+ &#8226;   <a href="#infra.bookmark_importer">infra.bookmark_importer</a>
  &#8226;   <a href="#markupsafe">markupsafe</a>
 
   </div>
@@ -8743,6 +8749,7 @@ imported by:
 imported by:
     <a href="#infra.auto_start">infra.auto_start</a>
  &#8226;   <a href="#infra.backup">infra.backup</a>
+ &#8226;   <a href="#infra.bookmark_importer">infra.bookmark_importer</a>
  &#8226;   <a href="#infra.browser_launcher">infra.browser_launcher</a>
  &#8226;   <a href="#infra.config">infra.config</a>
  &#8226;   <a href="#infra.encryption">infra.encryption</a>
@@ -8799,6 +8806,27 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="infra.bookmark_importer"></a>
+  <a target="code" href="///E:/linkvault/linkvault/infra/bookmark_importer.py" type="text/plain"><tt>infra.bookmark_importer</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#data.bookmark_repo">data.bookmark_repo</a>
+ &#8226;   <a href="#data.database">data.database</a>
+ &#8226;   <a href="#data.folder_repo">data.folder_repo</a>
+ &#8226;   <a href="#html">html</a>
+ &#8226;   <a href="#infra">infra</a>
+ &#8226;   <a href="#re">re</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#ui_qt.main_window">ui_qt.main_window</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="infra.browser_launcher"></a>
   <a target="code" href="///E:/linkvault/linkvault/infra/browser_launcher.py" type="text/plain"><tt>infra.browser_launcher</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -8814,7 +8842,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#core.bookmark_manager">core.bookmark_manager</a>
+    <a href="#app_qt.py">app_qt.py</a>
+ &#8226;   <a href="#core.bookmark_manager">core.bookmark_manager</a>
  &#8226;   <a href="#core.random_walker">core.random_walker</a>
  &#8226;   <a href="#core.schedule_engine">core.schedule_engine</a>
  &#8226;   <a href="#infra.notifier">infra.notifier</a>
@@ -8834,7 +8863,6 @@ imported by:
 imports:
     <a href="#infra">infra</a>
  &#8226;   <a href="#os">os</a>
- &#8226;   <a href="#sys">sys</a>
 
   </div>
   <div class="import">
@@ -11718,6 +11746,7 @@ imported by:
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.metadata._adapters">importlib.metadata._adapters</a>
  &#8226;   <a href="#importlib.metadata._text">importlib.metadata._text</a>
+ &#8226;   <a href="#infra.bookmark_importer">infra.bookmark_importer</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#ipaddress">ipaddress</a>
  &#8226;   <a href="#jinja2._identifier">jinja2._identifier</a>
@@ -12460,7 +12489,6 @@ imported by:
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.util">importlib.util</a>
  &#8226;   <a href="#infra.auto_start">infra.auto_start</a>
- &#8226;   <a href="#infra.config">infra.config</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#jinja2.bccache">jinja2.bccache</a>
  &#8226;   <a href="#jinja2.debug">jinja2.debug</a>
@@ -13090,6 +13118,7 @@ imports:
  &#8226;   <a href="#core.bookmark_manager">core.bookmark_manager</a>
  &#8226;   <a href="#core.folder_manager">core.folder_manager</a>
  &#8226;   <a href="#core.random_walker">core.random_walker</a>
+ &#8226;   <a href="#data.pool_repo">data.pool_repo</a>
  &#8226;   <a href="#infra.browser_launcher">infra.browser_launcher</a>
  &#8226;   <a href="#re">re</a>
  &#8226;   <a href="#ui_qt">ui_qt</a>
@@ -13205,6 +13234,8 @@ imports:
  &#8226;   <a href="#PySide6.QtWidgets">PySide6.QtWidgets</a>
  &#8226;   <a href="#core.folder_manager">core.folder_manager</a>
  &#8226;   <a href="#core.random_walker">core.random_walker</a>
+ &#8226;   <a href="#data.folder_repo">data.folder_repo</a>
+ &#8226;   <a href="#data.pool_repo">data.pool_repo</a>
  &#8226;   <a href="#ui_qt">ui_qt</a>
 
   </div>
@@ -13251,6 +13282,7 @@ imports:
  &#8226;   <a href="#data.folder_repo">data.folder_repo</a>
  &#8226;   <a href="#data.schedule_repo">data.schedule_repo</a>
  &#8226;   <a href="#infra.backup">infra.backup</a>
+ &#8226;   <a href="#infra.bookmark_importer">infra.bookmark_importer</a>
  &#8226;   <a href="#json">json</a>
  &#8226;   <a href="#ui_qt">ui_qt</a>
  &#8226;   <a href="#ui_qt.bookmark_list">ui_qt.bookmark_list</a>

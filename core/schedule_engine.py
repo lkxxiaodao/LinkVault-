@@ -9,6 +9,13 @@ from infra.browser_launcher import BrowserLauncher
 from infra.notifier import Notifier
 
 
+import calendar
+
+def _last_day_of_month(date):
+    """返回指定日期所在月份的最后一天（整数）"""
+    return calendar.monthrange(date.year, date.month)[1]
+
+
 class ScheduleEngine:
     _instance = None
     _lock = threading.Lock()
@@ -66,18 +73,16 @@ class ScheduleEngine:
             if days:
                 return weekday in days
             return weekday == today.weekday()
-        if repeat_type == 'biweekly':
-            import json
-            days = json.loads(sched.get('repeat_days', '[]'))
-            if days:
-                return weekday in days and today.isocalendar()[1] % 2 == 0
-            return today.isocalendar()[1] % 2 == 0
         if repeat_type == 'monthly':
-            return today.day == 1
-        if repeat_type == 'custom':
             import json
             days = json.loads(sched.get('repeat_days', '[]'))
-            return weekday in days
+            if not days:
+                return today.day == 1
+            day = days[0] if isinstance(days, list) else days
+            if day == 32:
+                # 每月最后一天
+                return today.day == _last_day_of_month(today)
+            return today.day == day
         return False
 
     def _trigger(self, schedule_id):

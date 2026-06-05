@@ -226,8 +226,7 @@ class MainWindow(QMainWindow):
         self.sched_repeat_group = QButtonGroup()
         repeat_options = [
             ('仅一次', 'once'), ('每天', 'daily'), ('工作日', 'weekdays'),
-            ('每周', 'weekly'), ('每两周', 'biweekly'), ('每月', 'monthly'),
-            ('自定义', 'custom')
+            ('每周', 'weekly'), ('每月', 'monthly'),
         ]
         self.sched_repeat_radios = {}
         for i, (label, value) in enumerate(repeat_options):
@@ -244,12 +243,25 @@ class MainWindow(QMainWindow):
 
         row4 = QHBoxLayout()
         row4.addWidget(QLabel('重复日：'))
+        self._sched_repeat_day_label = row4.itemAt(row4.count() - 1).widget()
+
+        # 每周的星期选择
         self.sched_day_checks = {}
         weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
         for i, name in enumerate(weekdays):
             cb = QCheckBox(name)
             self.sched_day_checks[i] = cb
             row4.addWidget(cb)
+
+        # 每月的日期选择
+        self.sched_month_day_combo = QComboBox()
+        self.sched_month_day_combo.addItem('每月1日', 1)
+        for d in range(2, 32):
+            self.sched_month_day_combo.addItem(f'每月{d}日', d)
+        self.sched_month_day_combo.addItem('每月最后一天', 32)
+        self.sched_month_day_combo.setVisible(False)
+        row4.addWidget(self.sched_month_day_combo)
+
         row4.addStretch()
         form_layout.addLayout(row4)
 
@@ -288,9 +300,19 @@ class MainWindow(QMainWindow):
             rt = [k for k, v in self.sched_repeat_radios.items() if v == val][0]
         else:
             rt = 'daily'
-        enabled = rt in ('weekly', 'custom')
+
+        # 每周：显示星期选择
+        show_weekdays = (rt == 'weekly')
+        self._sched_repeat_day_label.setVisible(show_weekdays)
         for cb in self.sched_day_checks.values():
-            cb.setEnabled(enabled)
+            cb.setVisible(show_weekdays)
+
+        # 每月：显示日期选择
+        show_monthly = (rt == 'monthly')
+        self.sched_month_day_combo.setVisible(show_monthly)
+
+        if not show_weekdays and not show_monthly:
+            self._sched_repeat_day_label.setVisible(False)
 
     def _show_sched_form(self, schedule=None):
         self._sched_edit_id = schedule['id'] if schedule else None
@@ -322,6 +344,12 @@ class MainWindow(QMainWindow):
                 for d in days:
                     if d in self.sched_day_checks:
                         self.sched_day_checks[d].setChecked(True)
+                # 每月：设置日期选择
+                if days and rt == 'monthly':
+                    month_day = days[0] if isinstance(days, list) else days
+                    idx = self.sched_month_day_combo.findData(month_day)
+                    if idx >= 0:
+                        self.sched_month_day_combo.setCurrentIndex(idx)
             except (json.JSONDecodeError, TypeError):
                 pass
             associated = ScheduleRepo.get_bookmarks(schedule['id'])
@@ -353,7 +381,10 @@ class MainWindow(QMainWindow):
         checked = self.sched_repeat_group.checkedButton()
         rt = [k for k, v in self.sched_repeat_radios.items() if v == checked][0] if checked else 'daily'
         import json
-        repeat_days = json.dumps([i for i, v in self.sched_day_checks.items() if v.isChecked()])
+        if rt == 'monthly':
+            repeat_days = json.dumps([self.sched_month_day_combo.currentData()])
+        else:
+            repeat_days = json.dumps([i for i, v in self.sched_day_checks.items() if v.isChecked()])
         selected_rows = set()
         for item in self.sched_bookmark_list.selectedItems():
             selected_rows.add(item.row())
@@ -375,13 +406,24 @@ class MainWindow(QMainWindow):
         schedules = ScheduleRepo.get_all()
         repeat_labels = {
             'once': '仅一次', 'daily': '每天', 'weekdays': '每个工作日',
-            'weekly': '每周', 'biweekly': '每两周', 'monthly': '每月', 'custom': '自定义',
+            'weekly': '每周', 'monthly': '每月',
         }
         for s in schedules:
             row = self.schedule_table.rowCount()
             self.schedule_table.insertRow(row)
             time_str = f"{s['hour']:02d}:{s['minute']:02d}"
             repeat_str = repeat_labels.get(s['repeat_type'], s['repeat_type'])
+            if s['repeat_type'] == 'monthly':
+                import json
+                try:
+                    days = json.loads(s.get('repeat_days', '[]'))
+                    day = days[0] if days else 1
+                    if day == 32:
+                        repeat_str = '每月最后一天'
+                    else:
+                        repeat_str = f'每月{day}日'
+                except (json.JSONDecodeError, TypeError, IndexError):
+                    pass
             active_str = '启用' if s['is_active'] else '禁用'
             self.schedule_table.setItem(row, 0, QTableWidgetItem(s['name']))
             self.schedule_table.setItem(row, 1, QTableWidgetItem(time_str))
