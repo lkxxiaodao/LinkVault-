@@ -81,9 +81,6 @@ LinkVault 是一款基于 **Python + PySide6 (Qt6)** 开发的 Windows 桌面书
 ### 从源码运行
 
 ```bash
-# 克隆仓库、
-git clone https://gitcode.com/lkx040527/LinkVault.git
-
 # 进入源码目录
 cd linkvault
 
